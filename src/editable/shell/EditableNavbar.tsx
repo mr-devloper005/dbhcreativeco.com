@@ -1,139 +1,163 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, Search, UserPlus, LogIn, X, PlusCircle } from 'lucide-react'
+import { CornerDownLeft, LogIn, LogOut, Menu, Search, X } from 'lucide-react'
 import { SITE_CONFIG } from '@/lib/site-config'
 import { globalContent } from '@/editable/content/global.content'
 import { useEditableLocalAuthSession } from '@/editable/components/EditableLocalAuthForms'
 
+/*
+  Reference-style four-column top nav. On the home hero (burnt-orange
+  background) it renders white-on-orange with no backdrop; on every
+  other page it renders dark-on-white with a hairline border.
+*/
+
 export function EditableNavbar() {
   const [open, setOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const pathname = usePathname()
   const { session, logout } = useEditableLocalAuthSession()
-  const navItems = useMemo(
-    () => SITE_CONFIG.tasks.filter((task) => task.enabled).map((task) => ({ label: task.label, href: task.route })),
-    []
-  )
+  const links = globalContent.nav.primaryLinks
+
+  const onHero = pathname === '/'
+
+  useEffect(() => {
+    if (!onHero) return
+    const onScroll = () => setScrolled(window.scrollY > 80)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [onHero])
+
+  const overlay = onHero && !scrolled
+  const shellCls = overlay
+    ? 'text-white'
+    : 'bg-[var(--editable-nav-bg)] text-[var(--slot4-page-text)] border-b border-[var(--editable-border)]'
+  const borderCls = overlay ? 'border-white/25' : 'border-[var(--editable-border-strong)]'
+  const linkCls = overlay
+    ? 'text-white/90 hover:text-white'
+    : 'text-[var(--slot4-page-text)] hover:text-[var(--slot4-accent)]'
+  const mutedCls = overlay ? 'text-white/70' : 'text-[var(--slot4-muted-text)]'
+
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`)
+
+  // On home the nav sits over the hero (absolute so hero starts at y=0);
+  // on every other page it sticks to the top with a solid backdrop.
+  const positionCls = onHero && !scrolled ? 'absolute top-0 inset-x-0' : 'sticky top-0'
 
   return (
-    <header className="sticky top-0 z-50 bg-[var(--editable-nav-bg)]/96 text-[var(--editable-nav-text)] backdrop-blur-md">
-      <div className="h-[3px] bg-[linear-gradient(90deg,transparent_0%,var(--slot4-accent)_20%,var(--slot4-accent)_80%,transparent_100%)]" />
-
-      <nav className="mx-auto flex min-h-[76px] w-full max-w-[var(--editable-container)] items-center gap-5 px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="group flex shrink-0 items-center gap-3 border-r border-[var(--editable-border)] pr-5">
-          <span className="flex h-11 w-11 items-center justify-center border border-[var(--slot4-accent)]/45 bg-[var(--slot4-surface-bg)] transition group-hover:border-[var(--slot4-accent)]">
-            <img src="/favicon.png?v=20260413" alt={SITE_CONFIG.name} className="h-8 w-8 object-contain" />
-          </span>
-          <span className="hidden min-w-0 md:block">
-            <span className="editable-display block max-w-[200px] truncate text-xl font-semibold leading-none tracking-[0.01em]">{SITE_CONFIG.name}</span>
-            <span className="mt-1 block max-w-[200px] truncate text-[10px] font-medium uppercase tracking-[0.26em] text-[var(--slot4-muted-text)]">
-              {globalContent.nav?.tagline || SITE_CONFIG.tagline}
-            </span>
+    <header className={`${positionCls} z-50 ${overlay ? 'bg-transparent' : ''} ${shellCls} transition-colors duration-500`}>
+      <nav
+        className={`mx-auto grid w-full max-w-[var(--editable-container)] items-start gap-6 px-4 pb-6 pt-6 sm:px-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] lg:gap-10 lg:px-12`}
+      >
+        {/* Column 1 — logo */}
+        <Link href="/" className="flex shrink-0 items-center gap-2.5">
+          <span className={`editable-display text-[1.75rem] font-medium leading-none tracking-[-0.03em] ${overlay ? 'text-white' : 'text-[var(--slot4-page-text)]'}`}>
+            {SITE_CONFIG.name}
           </span>
         </Link>
 
-        <div className="hidden items-stretch gap-0 lg:flex">
-          {navItems.slice(0, 5).map((item) => {
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`relative flex items-center px-4 text-[11px] font-semibold uppercase tracking-[0.22em] transition ${
-                  active ? 'text-[var(--slot4-accent)]' : 'text-[var(--slot4-muted-text)] hover:text-[var(--slot4-page-text)]'
-                }`}
-              >
-                {item.label}
-                {active ? <span className="absolute inset-x-3 bottom-0 h-[2px] bg-[var(--slot4-accent)]" /> : null}
-              </Link>
-            )
-          })}
+        {/* Column 2 — primary menu (About, Contact, Search) */}
+        <div className="hidden flex-col gap-3 lg:flex">
+          {links.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`w-fit text-[15px] font-medium transition duration-300 ${linkCls} ${isActive(item.href) ? (overlay ? 'text-white' : 'text-[var(--slot4-accent)]') : ''}`}
+            >
+              {item.label}
+            </Link>
+          ))}
+          <Link href="/search" className={`w-fit text-[15px] font-medium transition duration-300 ${linkCls}`}>
+            Search
+          </Link>
         </div>
 
-        <form action="/search" className="mx-auto hidden min-w-0 flex-1 justify-center md:flex">
-          <label className="flex w-full max-w-md items-center gap-2 border-b border-[var(--slot4-accent)]/30 pb-2 transition focus-within:border-[var(--slot4-accent)]">
-            <Search className="h-4 w-4 shrink-0 text-[var(--slot4-accent)]" />
-            <input
-              name="q"
-              type="search"
-              placeholder="Search posts"
-              className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-[var(--slot4-muted-text)]"
-            />
-          </label>
-        </form>
+        {/* Column 3 — quick facts */}
+        <div className={`hidden flex-col gap-3 text-[15px] font-medium lg:flex ${overlay ? 'text-white' : 'text-[var(--slot4-page-text)]'}`}>
+          <span>{globalContent.marketplace.label}</span>
+          <span className={mutedCls}>{globalContent.nav.tagline}</span>
+          <Link href="/create" className={`w-fit text-[15px] font-medium transition duration-300 ${linkCls}`}>
+            Post a listing
+          </Link>
+        </div>
 
-        <div className="ml-auto flex shrink-0 items-center gap-2">
+        {/* Column 4 — CONTACT / auth */}
+        <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+          <Link
+            href="/contact"
+            className={`hidden items-center gap-2 text-[12px] font-medium uppercase tracking-[0.22em] transition duration-300 sm:inline-flex ${overlay ? 'text-white hover:text-white/80' : 'text-[var(--slot4-page-text)] hover:text-[var(--slot4-accent)]'}`}
+          >
+            <CornerDownLeft className="h-4 w-4 rotate-180" /> Contact
+          </Link>
+          <Link
+            href="/search"
+            className={`flex h-10 w-10 items-center justify-center rounded-full border transition duration-300 lg:hidden ${borderCls} ${overlay ? 'text-white hover:bg-white/10' : 'text-[var(--slot4-page-text)] hover:border-[var(--slot4-page-text)]'}`}
+            aria-label="Search"
+          >
+            <Search className="h-4 w-4" />
+          </Link>
           {session ? (
-            <>
-              <Link
-                href="/create"
-                className="hidden items-center gap-2 border border-[var(--slot4-accent)] bg-[var(--editable-cta-bg)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--editable-cta-text)] transition hover:opacity-90 sm:inline-flex"
-              >
-                <PlusCircle className="h-3.5 w-3.5" /> Create
-              </Link>
-              <button
-                type="button"
-                onClick={logout}
-                className="hidden items-center gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--slot4-muted-text)] transition hover:text-[var(--slot4-page-text)] sm:inline-flex"
-              >
-                Logout
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={logout}
+              className={`hidden items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition duration-300 sm:inline-flex ${borderCls} ${overlay ? 'text-white hover:bg-white/10' : 'text-[var(--slot4-page-text)] hover:border-[var(--slot4-page-text)]'}`}
+            >
+              <LogOut className="h-4 w-4" /> Sign out
+            </button>
           ) : (
-            <>
-              <Link
-                href="/login"
-                className="hidden items-center gap-2 border border-[var(--editable-border)] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--slot4-muted-text)] transition hover:border-[var(--slot4-accent)]/40 hover:text-[var(--slot4-page-text)] sm:inline-flex"
-              >
-                <LogIn className="h-3.5 w-3.5" /> Login
-              </Link>
-              <Link
-                href="/signup"
-                className="hidden items-center gap-2 border border-[var(--slot4-accent)] bg-[var(--editable-cta-bg)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--editable-cta-text)] transition hover:opacity-90 sm:inline-flex"
-              >
-                <UserPlus className="h-3.5 w-3.5" /> Sign up
-              </Link>
-            </>
+            <Link
+              href="/login"
+              className={`hidden items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition duration-300 sm:inline-flex ${borderCls} ${overlay ? 'text-white hover:bg-white/10' : 'text-[var(--slot4-page-text)] hover:border-[var(--slot4-page-text)]'}`}
+            >
+              <LogIn className="h-4 w-4" /> Sign in
+            </Link>
           )}
           <button
             type="button"
-            onClick={() => setOpen((value) => !value)}
-            className="border border-[var(--editable-border)] bg-[var(--slot4-surface-bg)] p-2 lg:hidden"
+            onClick={() => setOpen((v) => !v)}
+            className={`flex h-10 w-10 items-center justify-center rounded-full border transition duration-300 lg:hidden ${borderCls} ${overlay ? 'text-white' : 'text-[var(--slot4-page-text)]'}`}
             aria-label="Toggle menu"
           >
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
         </div>
       </nav>
 
-      <div className="h-px bg-[var(--editable-border)]" />
-
       {open ? (
-        <div className="border-t border-[var(--editable-border)] bg-[var(--editable-nav-bg)] px-4 py-5 lg:hidden">
-          <form action="/search" className="mb-5 flex items-center gap-2 border-b border-[var(--slot4-accent)]/30 pb-2">
-            <Search className="h-4 w-4 text-[var(--slot4-accent)]" />
-            <input name="q" type="search" placeholder="Search posts" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--slot4-muted-text)]" />
-          </form>
+        <div className={`border-t px-4 pb-6 pt-4 sm:px-6 lg:hidden ${overlay ? 'border-white/15 bg-[var(--slot4-accent)]' : 'border-[var(--editable-border)] bg-[var(--editable-nav-bg)]'}`}>
           <div className="grid gap-1">
-            {[{ label: 'Home', href: '/' }, ...navItems, { label: 'Contact', href: '/contact' }, ...(session ? [{ label: 'Create', href: '/create' }] : [{ label: 'Login', href: '/login' }, { label: 'Sign up', href: '/signup' }])].map((item) => {
-              const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  className={`border-l-2 px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] ${
-                    active
-                      ? 'border-[var(--slot4-accent)] bg-[var(--slot4-surface-bg)] text-[var(--slot4-accent)]'
-                      : 'border-transparent text-[var(--slot4-muted-text)] hover:border-[var(--slot4-accent)]/40 hover:bg-[var(--slot4-surface-bg)]'
-                  }`}
+            {[...links, { label: 'Search', href: '/search' }, { label: 'Post a listing', href: '/create' }].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className={`rounded-lg px-4 py-3 text-base font-medium transition ${overlay ? 'text-white hover:bg-white/10' : 'text-[var(--slot4-page-text)] hover:bg-[var(--slot4-panel-bg)]'}`}
+              >
+                {item.label}
+              </Link>
+            ))}
+            <div className={`mt-3 grid gap-2 border-t pt-4 ${overlay ? 'border-white/15' : 'border-[var(--editable-border)]'}`}>
+              {session ? (
+                <button
+                  type="button"
+                  onClick={() => { logout(); setOpen(false) }}
+                  className={`inline-flex items-center justify-center gap-2 rounded-full border px-5 py-3 text-sm font-medium ${overlay ? 'border-white/30 text-white' : 'border-[var(--editable-border)] text-[var(--slot4-page-text)]'}`}
                 >
-                  {item.label}
+                  <LogOut className="h-4 w-4" /> Sign out
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setOpen(false)}
+                  className={`inline-flex items-center justify-center gap-2 rounded-full border px-5 py-3 text-sm font-medium ${overlay ? 'border-white/30 text-white' : 'border-[var(--editable-border)] text-[var(--slot4-page-text)]'}`}
+                >
+                  <LogIn className="h-4 w-4" /> Sign in
                 </Link>
-              )
-            })}
+              )}
+            </div>
           </div>
         </div>
       ) : null}
