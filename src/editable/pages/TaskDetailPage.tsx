@@ -12,6 +12,7 @@ import type { SitePost } from '@/lib/site-connector'
 import { EditableSiteShell } from '@/editable/shell/EditableSiteShell'
 import { EditableArticleComments } from '@/editable/components/EditableArticleComments'
 import { EditableReveal } from '@/editable/shell/EditableReveal'
+import { ClassifiedStickyBar } from '@/editable/components/ClassifiedStickyBar'
 import { getTaskTheme, taskThemeStyle } from '@/editable/theme/task-themes'
 import { isUiHiddenTask } from '@/editable/content/global.content'
 
@@ -300,27 +301,13 @@ function ClassifiedDetail({ post, related }: { post: SitePost; related: SitePost
       </section>
 
       {/* ---------------- Sticky mini action bar ---------------- */}
-      <div className="sticky top-0 z-40 border-b border-[var(--tk-line)] bg-[var(--tk-surface)]/95 backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-[var(--editable-container)] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-12">
-          <div className="flex min-w-0 items-center gap-4">
-            <span className="editable-display truncate text-[1.05rem] font-medium tracking-[-0.015em] text-[var(--tk-text)]">
-              {post.title}
-            </span>
-            {price ? (
-              <span className="hidden shrink-0 rounded-full bg-[var(--tk-accent-soft)] px-3 py-1 text-sm font-medium text-[var(--tk-accent)] sm:inline-flex">
-                {price}
-              </span>
-            ) : null}
-          </div>
-          <a
-            href={primaryContact}
-            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[var(--tk-accent)] px-4 py-2 text-sm font-medium text-[var(--tk-on-accent)] transition hover:opacity-90"
-          >
-            {phone ? <Phone className="h-4 w-4" /> : email ? <Mail className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
-            Contact seller
-          </a>
-        </div>
-      </div>
+      <ClassifiedStickyBar
+        title={post.title}
+        price={price}
+        primaryContact={primaryContact}
+        hasPhone={!!phone}
+        hasEmail={!!email}
+      />
 
       {/* ---------------- Gallery + seller (two-column) ---------------- */}
       <section className="mx-auto grid w-full max-w-[var(--editable-container)] gap-10 px-4 py-14 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] lg:gap-12 lg:px-12 lg:py-20">
@@ -592,7 +579,7 @@ function ProfileDetail({ post }: { post: SitePost }) {
     role ? { icon: Building2, label: 'Role', value: role } : null,
     phone ? { icon: Phone, label: 'Phone', value: phone, href: `tel:${phone}` } : null,
     email ? { icon: Mail, label: 'Email', value: email, href: `mailto:${email}` } : null,
-    website ? { icon: Globe2, label: 'Website', value: website.replace(/^https?:\/\//, ''), href: website, external: true } : null,
+    null,
     twitter ? { icon: ExternalLink, label: 'Twitter', value: twitter, href: twitter.startsWith('http') ? twitter : `https://twitter.com/${twitter.replace('@', '')}`, external: true } : null,
     instagram ? { icon: ExternalLink, label: 'Instagram', value: instagram, href: instagram.startsWith('http') ? instagram : `https://instagram.com/${instagram.replace('@', '')}`, external: true } : null,
   ].filter(Boolean) as Array<{ icon: typeof MapPin; label: string; value: string; href?: string; external?: boolean }>
@@ -690,12 +677,6 @@ function ProfileDetail({ post }: { post: SitePost }) {
               ) : null}
             </div>
 
-            {/* Anchor nav (in-page) */}
-            <div className="mt-14 flex flex-wrap gap-6 border-t border-white/10 pt-6 text-xs font-medium uppercase tracking-[0.22em] text-white/60">
-              <a href="#about" className="transition hover:text-white">About</a>
-              {workImages.length ? <a href="#work" className="transition hover:text-white">Their work</a> : null}
-              <a href="#contact" className="transition hover:text-white">Contact</a>
-            </div>
           </EditableReveal>
         </div>
       </section>
