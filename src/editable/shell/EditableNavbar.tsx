@@ -54,6 +54,9 @@ export function EditableNavbar() {
       >
         {/* Column 1 — logo */}
         <Link href="/" className="flex shrink-0 items-center gap-2.5">
+          <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[var(--slot4-accent)]">
+            <img src="/favicon.png" alt={SITE_CONFIG.name} className="h-10 w-10 object-contain" />
+          </span>
           <span className={`editable-display text-[1.75rem] font-medium leading-none tracking-[-0.03em] ${overlay ? 'text-white' : 'text-[var(--slot4-page-text)]'}`}>
             {SITE_CONFIG.name}
           </span>

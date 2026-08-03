@@ -23,7 +23,7 @@ export const globalContent = {
     sellers: slot4BrandConfig.marketplaceLabel.sellers,
   },
   nav: {
-    tagline: 'The Market · Independent sellers',
+    tagline: 'Independent sellers',
     primaryLinks: [
       { label: 'About', href: '/about' },
       { label: 'Contact', href: '/contact' },
